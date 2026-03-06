@@ -1,7 +1,7 @@
 # hackathon-project
 
 
-# Frontend 
+# Frontend \
 ## Commands to get frontend running:
 
 cd frontend 
