@@ -1,11 +1,11 @@
 # hackathon-project
 
 
-# Frontend \
+# Frontend 
 ## Commands to get frontend running:
 
 cd frontend 
-npm i
+npm i \
 npm run dev # Command to run frontend 
 
 # Backend 
