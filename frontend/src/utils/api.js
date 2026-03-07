@@ -1,8 +1,17 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://127.0.0.1:8000',
+  timeout: 30000,
 });
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error.message, error.response?.status);
+    return Promise.reject(error);
+  }
+);
 
 export const parseResume = async (formData) => {
   const response = await api.post('/resume/parse', formData, {
@@ -22,7 +31,8 @@ export const generateRoadmap = async (data) => {
 };
 
 export const startInterview = async (data) => {
-  const response = await api.post('/interview/start', data);
+  console.log('startInterview called with:', data)
+  const response = await api.post('/interview/start', data, { timeout: 30000 });
   return response.data;
 };
 

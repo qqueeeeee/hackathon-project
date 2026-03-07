@@ -4,7 +4,11 @@ from typing import Optional, List
 import fitz
 import json
 import re
+import time
+import logging
 from utils.groq_client import chat
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -16,6 +20,7 @@ class ResumeParseResponse(BaseModel):
     projects: list[str]
     summary: str
     target_roles: list[str]
+    parsing_notes: Optional[str] = None
 
 
 class EducationEntry(BaseModel):
@@ -54,8 +59,12 @@ class ResumeBuilderData(BaseModel):
 
 @router.post("/parse", response_model=ResumeParseResponse)
 async def parse_resume(file: UploadFile = File(...)):
+    logger.info(f"Resume upload received — filename: {file.filename}, size: {file.size} bytes")
+    
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="File must be a PDF")
+    
+    start_time = time.time()
     
     try:
         contents = await file.read()
@@ -65,8 +74,12 @@ async def parse_resume(file: UploadFile = File(...)):
             text += page.get_text()
         doc.close()
         
-        if not text.strip():
-            raise HTTPException(status_code=500, detail="Failed to extract text from PDF")
+        char_count = len(text.strip())
+        logger.info(f"PDF text extracted — {char_count} characters")
+        
+        if not text.strip() or char_count < 100:
+            logger.warning("PDF text extraction failed or insufficient text")
+            raise HTTPException(status_code=422, detail="Could not extract text from this PDF. It may be scanned or image-based. Please use a text-based PDF.")
         
         system_prompt = """You are a resume parser. Extract structured information from the resume text below.
 Return ONLY a JSON object with these exact keys:
@@ -77,6 +90,7 @@ Return ONLY a JSON object with these exact keys:
 - projects: array of strings (notable projects)
 - summary: string (2-3 sentence professional summary)
 - target_roles: array of 3 strings (potential target job roles)
+- parsing_notes: string (a single sentence explaining what you found or any assumptions made)
 
 Do NOT include any markdown fences or additional text. Return ONLY the JSON object."""
 
@@ -86,14 +100,43 @@ Do NOT include any markdown fences or additional text. Return ONLY the JSON obje
         result = re.sub(r'\s*```$', '', result)
         
         data = json.loads(result)
+        
+        if not data.get('name'):
+            raise HTTPException(status_code=422, detail="AI could not parse resume structure. Please ensure your resume has clear sections for skills and experience.")
+        
+        if not data.get('skills') or len(data.get('skills', [])) < 1:
+            logger.warning("No skills found in parsed resume")
+            raise HTTPException(status_code=422, detail="AI could not parse resume structure. Please ensure your resume has clear sections for skills and experience.")
+        
+        if not isinstance(data.get('experience_years'), (int, float)):
+            logger.warning("experience_years not a valid number")
+            data['experience_years'] = 0
+        
+        if data.get('experience_years', 0) == 0:
+            logger.warning("experience_years defaulted to 0")
+        
+        if len(data.get('skills', [])) < 3:
+            logger.warning(f"Low skill count ({len(data.get('skills', []))}) detected in parsed resume")
+        
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+        logger.info(f"Groq parse completed in {elapsed_ms}ms — name: {data.get('name')}, skills: {len(data.get('skills', []))}")
+        
         return ResumeParseResponse(**data)
     
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing failed: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=422, detail="AI could not parse resume structure. Please ensure your resume has clear sections for skills and experience.")
     except Exception as e:
+        logger.error(f"Resume parsing failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to parse resume: {str(e)}")
 
 
 @router.post("/from-builder", response_model=ResumeParseResponse)
 async def parse_resume_from_builder(data: ResumeBuilderData):
+    start_time = time.time()
+    
     try:
         resume_text = f"""Name: {data.name}
 Email: {data.email}
@@ -123,6 +166,7 @@ Return ONLY a JSON object with these exact keys:
 - projects: array of strings (notable projects)
 - summary: string (2-3 sentence professional summary)
 - target_roles: array of 3 strings (potential target job roles based on their experience and skills)
+- parsing_notes: string (a single sentence explaining what you found or any assumptions made)
 
 Do NOT include any markdown fences or additional text. Return ONLY the JSON object."""
 
@@ -132,7 +176,29 @@ Do NOT include any markdown fences or additional text. Return ONLY the JSON obje
         result = re.sub(r'\s*```$', '', result)
         
         parsed = json.loads(result)
+        
+        if not parsed.get('name'):
+            raise HTTPException(status_code=422, detail="AI could not parse resume structure. Please ensure your resume has clear sections for skills and experience.")
+        
+        if not parsed.get('skills') or len(parsed.get('skills', [])) < 1:
+            raise HTTPException(status_code=422, detail="AI could not parse resume structure. Please ensure your resume has clear sections for skills and experience.")
+        
+        if not isinstance(parsed.get('experience_years'), (int, float)):
+            parsed['experience_years'] = 0
+        
+        if parsed.get('experience_years', 0) == 0:
+            logger.warning("experience_years defaulted to 0")
+        
+        if len(parsed.get('skills', [])) < 3:
+            logger.warning(f"Low skill count ({len(parsed.get('skills', []))}) detected in parsed resume")
+        
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+        logger.info(f"Groq parse completed in {elapsed_ms}ms — name: {parsed.get('name')}, skills: {len(parsed.get('skills', []))}")
+        
         return ResumeParseResponse(**parsed)
     
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Resume builder parsing failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to process resume: {str(e)}")

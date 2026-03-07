@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, BookOpen, Target, Sparkles, Lock, Upload, RefreshCw } from 'lucide-react'
+import { Calendar, BookOpen, Target, Sparkles, Lock, Upload, RefreshCw, ExternalLink } from 'lucide-react'
 import { generateRoadmap } from '../utils/api'
 
 const PriorityBadge = ({ priority }) => {
@@ -55,6 +55,7 @@ const Roadmap = () => {
     const loadRoadmap = async () => {
       const profileData = localStorage.getItem('pf_profile')
       const targetRole = localStorage.getItem('pf_target_role')
+      const duration = localStorage.getItem('pf_duration')
 
       if (!profileData || !targetRole) {
         setLoading(false)
@@ -67,7 +68,8 @@ const Roadmap = () => {
           name: String(profile.name || ''),
           skills: Array.isArray(profile.skills) ? profile.skills : [],
           experience_years: Number(profile.experience_years) || 0,
-          target_role: String(targetRole || 'Frontend Developer')
+          target_role: String(targetRole || 'Frontend Developer'),
+          duration_months: parseInt(duration) || 12
         }
         const data = await generateRoadmap(requestData)
         setRoadmap(data)
@@ -90,13 +92,15 @@ const Roadmap = () => {
     try {
       const profileData = localStorage.getItem('pf_profile')
       const targetRole = localStorage.getItem('pf_target_role')
+      const duration = localStorage.getItem('pf_duration')
       const profile = JSON.parse(profileData)
       
       const requestData = {
         name: String(profile.name || ''),
         skills: Array.isArray(profile.skills) ? profile.skills : [],
         experience_years: Number(profile.experience_years) || 0,
-        target_role: String(targetRole || 'Frontend Developer')
+        target_role: String(targetRole || 'Frontend Developer'),
+        duration_months: parseInt(duration) || 12
       }
       
       const data = await generateRoadmap(requestData)
@@ -202,7 +206,12 @@ const Roadmap = () => {
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}
         >
           <div>
-            <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Career Roadmap</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '2rem', color: 'var(--text-primary)' }}>Career Roadmap</h1>
+              <span style={{ fontFamily: 'IBM Plex Mono', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--surface-2)', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>
+                {localStorage.getItem('pf_duration') || 12}-MONTH ROADMAP
+              </span>
+            </div>
             <p style={{ color: 'var(--text-secondary)' }}>Your personalized path to success</p>
           </div>
           {roadmap && (
@@ -339,10 +348,30 @@ const Roadmap = () => {
                     </span>
                   ))}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--warning)' }}>
-                  <BookOpen style={{ width: 16, height: 16 }} />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{milestone.resource}</span>
-                </div>
+                {milestone.resources && milestone.resources.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {milestone.resources.map((resource, ridx) => (
+                      <a
+                        key={ridx}
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--accent)',
+                          fontFamily: 'Inter',
+                          fontSize: '0.875rem',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}
+                      >
+                        <ExternalLink style={{ width: '0.75rem', height: '0.75rem' }} />
+                        {resource.name}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

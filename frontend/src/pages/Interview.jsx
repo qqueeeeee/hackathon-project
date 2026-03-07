@@ -1,61 +1,82 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, MessageCircle, Sparkles, Lock, Upload } from 'lucide-react'
+import { Send, MessageCircle, Sparkles, Lock, Upload, ListChecks, Users, Code2, Check, ArrowLeft } from 'lucide-react'
 import { startInterview, interviewTurn, getInterviewSummary } from '../utils/api'
+
+const ROUND_TYPES = [
+  { id: 'mcq', name: 'MCQ Round', icon: ListChecks, badge: 'BEGINNER FRIENDLY', description: 'Multiple choice questions testing core concepts' },
+  { id: 'hr', name: 'HR Round', icon: Users, badge: 'ALL LEVELS', description: 'Behavioural questions on teamwork, communication, and culture fit' },
+  { id: 'technical', name: 'Technical Round', icon: Code2, badge: 'ADVANCED', description: 'Deep-dive technical questions, system design, and problem solving' }
+]
 
 const Interview = () => {
   const navigate = useNavigate()
   const chatRef = useRef(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [summary, setSummary] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
+  const [interviewStarted, setInterviewStarted] = useState(false)
+  const [roundType, setRoundType] = useState(null)
 
   const hasProfile = !!localStorage.getItem('pf_profile')
 
-  useEffect(() => {
-    if (!hasProfile) {
-      setLoading(false)
+  const handleStartInterview = async () => {
+    console.log('Starting interview...', { roundType })
+    
+    if (!roundType) {
+      console.log('No round type selected')
       return
     }
+    
+    setLoading(true)
+    
+    const profileData = localStorage.getItem('pf_profile')
+    const targetRole = localStorage.getItem('pf_target_role')
+    const roadmapData = localStorage.getItem('pf_roadmap')
 
-    const initInterview = async () => {
-      const profileData = localStorage.getItem('pf_profile')
-      const targetRole = localStorage.getItem('pf_target_role')
-      const roadmapData = localStorage.getItem('pf_roadmap')
+    console.log('Profile data:', profileData)
+    console.log('Target role:', targetRole)
 
-      if (!profileData || !targetRole) {
-        setLoading(false)
-        return
-      }
+    try {
+      const profile = JSON.parse(profileData)
+      const roadmap = roadmapData ? JSON.parse(roadmapData) : { skill_gaps: [] }
+      const skillGaps = roadmap.skill_gaps?.map(g => g.skill) || profile.skills?.slice(0, 5) || []
 
-      try {
-        const profile = JSON.parse(profileData)
-        const roadmap = roadmapData ? JSON.parse(roadmapData) : { skill_gaps: [] }
-        const skillGaps = roadmap.skill_gaps?.map(g => g.skill) || profile.skills?.slice(0, 5) || []
+      console.log('Calling API...')
+      
+      const response = await startInterview({
+        name: profile.name,
+        target_role: targetRole,
+        skill_gaps: skillGaps,
+        skills: profile.skills || [],
+        round_type: roundType
+      })
 
-        const response = await startInterview({
-          name: profile.name,
-          target_role: targetRole,
-          skill_gaps: skillGaps,
-          skills: profile.skills || []
-        })
-
-        setMessages([
-          { role: 'ai', type: 'opening', content: response.opening },
-          { role: 'ai', type: 'question', content: response.first_question }
-        ])
-      } catch (err) {
-        console.error('Failed to start interview:', err)
-      } finally {
-        setLoading(false)
-      }
+      console.log('API response:', response)
+      
+      setInterviewStarted(true)
+      setMessages([
+        { role: 'ai', type: 'opening', content: response.opening },
+        { role: 'ai', type: 'question', content: response.first_question }
+      ])
+    } catch (err) {
+      console.error('Failed to start interview:', err)
+      alert('Failed to start interview: ' + (err.message || err))
+    } finally {
+      console.log('Setting loading to false')
+      setLoading(false)
     }
+  }
 
-    initInterview()
-  }, [hasProfile])
+  const handleBackToSelection = () => {
+    setInterviewStarted(false)
+    setMessages([])
+    setIsComplete(false)
+    setRoundType(null)
+  }
 
   useEffect(() => {
     if (chatRef.current) {
@@ -84,7 +105,8 @@ const Interview = () => {
         target_role: targetRole,
         skill_gaps: skillGaps,
         history: history,
-        user_answer: userMessage
+        user_answer: userMessage,
+        round_type: roundType
       })
 
       setMessages(prev => [
@@ -98,7 +120,8 @@ const Interview = () => {
         const summaryResponse = await getInterviewSummary({
           name: profile.name,
           target_role: targetRole,
-          history: [...history, { role: 'assistant', content: response.feedback }]
+          history: [...history, { role: 'assistant', content: response.feedback }],
+          round_type: roundType
         })
         
         localStorage.setItem('pf_interview_score', summaryResponse.overall_score)
@@ -194,34 +217,6 @@ const Interview = () => {
     )
   }
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', position: 'relative' }} className="flex items-center justify-center pt-20">
-        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
-          <div className="orb w-[600px] h-[600px] var(--accent-subtle) top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-        </div>
-        <div style={{ textAlign: 'center', position: 'relative', zIndex: 10 }}>
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            style={{ width: 96, height: 96, margin: '0 auto 2rem', position: 'relative' }}
-          >
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '9999px', border: '4px solid rgba(255,255,255,0.05)' }} />
-            <div style={{ position: 'absolute', inset: 0, borderRadius: '9999px', border: '4px solid transparent', borderTopColor: 'var(--success)' }} />
-          </motion.div>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '0.75rem' }}
-          >
-            Connecting with your Future Self...
-          </motion.p>
-        </div>
-      </div>
-    )
-  }
-
   if (!hasProfile) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', position: 'relative', overflow: 'hidden' }} className="pt-20">
@@ -254,6 +249,67 @@ const Interview = () => {
     )
   }
 
+  if (!interviewStarted) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', position: 'relative', overflow: 'hidden' }} className="pt-20">
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+          <div className="orb w-[500px] h-[500px] var(--accent-subtle) top-0 right-0" />
+          <div className="orb w-[400px] h-[400px] var(--accent-subtle) bottom-0 left-0" />
+        </div>
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ textAlign: 'center', marginBottom: '2rem' }}
+          >
+            <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Mock Interview</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>Select your interview round type</p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+            {ROUND_TYPES.map((round) => (
+              <motion.div
+                key={round.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setRoundType(round.id)}
+                className="glow-card"
+                style={{ 
+                  padding: '1.5rem', 
+                  cursor: 'pointer',
+                  border: roundType === round.id ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  position: 'relative',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {roundType === round.id && (
+                  <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check style={{ width: '1rem', height: '1rem', color: 'white' }} />
+                  </div>
+                )}
+                <div style={{ width: 48, height: 48, borderRadius: '0.75rem', background: 'var(--accent-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                  <round.icon style={{ width: 24, height: 24, color: 'var(--accent)' }} />
+                </div>
+                <h3 style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{round.name}</h3>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.5 }}>{round.description}</p>
+                <span style={{ fontSize: '0.6875rem', fontFamily: 'IBM Plex Mono', color: 'var(--accent)', background: 'var(--accent-subtle)', padding: '0.25rem 0.5rem', borderRadius: '0.25rem' }}>{round.badge}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => { console.log('BUTTON CLICKED'); handleStartInterview() }}
+            disabled={!roundType || loading}
+            className="btn-forge"
+            style={{ width: '100%', maxWidth: 400, margin: '0 auto', display: 'block', opacity: roundType ? 1 : 0.5 }}
+          >
+            {loading ? 'Starting...' : 'Start Interview'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', position: 'relative', overflow: 'hidden' }} className="pt-20">
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
@@ -267,9 +323,28 @@ const Interview = () => {
           animate={{ opacity: 1, y: 0 }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}
         >
-          <div>
-            <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Mock Interview</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Practice with your future self</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
+              onClick={handleBackToSelection}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '0.5rem',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <ArrowLeft style={{ width: 20, height: 20 }} />
+            </button>
+            <div>
+              <h1 style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Mock Interview</h1>
+              <p style={{ color: 'var(--text-secondary)' }}>Practice with your future self</p>
+            </div>
           </div>
         </motion.div>
 
@@ -296,6 +371,9 @@ const Interview = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ width: 10, height: 10, borderRadius: '9999px', background: 'var(--success)' }} className="pulse-live" />
             <span style={{ color: 'var(--success)', fontSize: '0.75rem', fontFamily: 'IBM Plex Mono', fontWeight: 700 }}>LIVE</span>
+            <span style={{ fontSize: '0.6875rem', fontFamily: 'IBM Plex Mono', background: 'var(--accent-subtle)', color: 'var(--accent)', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', marginLeft: '0.5rem' }}>
+              {roundType === 'mcq' ? 'MCQ' : roundType === 'hr' ? 'HR' : 'TECHNICAL'}
+            </span>
           </div>
         </motion.div>
 

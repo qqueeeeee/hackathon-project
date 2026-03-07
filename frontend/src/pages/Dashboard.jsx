@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { RotateCcw, FileText, Map, Mic, Trophy, Target, Sparkles, Upload, RefreshCw, ArrowRight, Search, Check, X, AlertCircle } from 'lucide-react'
@@ -67,6 +67,10 @@ const Dashboard = () => {
   const [jobDescription, setJobDescription] = useState('')
   const [jdAnalysis, setJdAnalysis] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
+  
+  useEffect(() => {
+    document.title = 'Dashboard — PathForge AI'
+  }, [])
   
   const profile = JSON.parse(localStorage.getItem('pf_profile') || 'null')
   const targetRole = localStorage.getItem('pf_target_role') || 'Unknown'
@@ -147,7 +151,7 @@ const Dashboard = () => {
 
   if (!hasProfile) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', padding: '2rem' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', padding: '7rem 2rem 2rem 2rem' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', padding: '4rem 1rem' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '2rem' }}>
             <div style={{ width: 96, height: 96, borderRadius: '1.5rem', background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 8px 32px rgba(79,110,247,0.3)' }}>
@@ -167,7 +171,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', padding: '7rem 2rem 2rem 2rem' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', marginBottom: '2rem' }} className="md:flex-row md:items-center md:justify-between">
           <div style={{ marginBottom: '1rem' }} className="md:mb-0">

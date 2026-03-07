@@ -34,6 +34,10 @@ const Resume = () => {
   const [file, setFile] = useState(null)
   const [selectedRole, setSelectedRole] = useState('Frontend Developer')
   const [customRole, setCustomRole] = useState('')
+  const [roadmapDuration, setRoadmapDuration] = useState(() => {
+    const saved = localStorage.getItem('pf_duration')
+    return saved ? parseInt(saved) : 12
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
@@ -531,6 +535,20 @@ const Resume = () => {
                 <span key={idx} style={{ padding: '0.25rem 0.75rem', borderRadius: '0.5rem', background: 'var(--accent-subtle)', color: 'var(--accent)', fontSize: '0.875rem', fontFamily: 'IBM Plex Mono' }}>{skill}</span>
               ))}
             </div>
+            {parsedResult.parsing_notes && (
+              <p style={{
+                fontFamily: 'IBM Plex Mono',
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                marginTop: '0.75rem',
+                padding: '0.75rem',
+                background: 'var(--surface-2)',
+                borderRadius: '0.5rem',
+                borderLeft: '3px solid var(--accent)'
+              }}>
+                {parsedResult.parsing_notes}
+              </p>
+            )}
             <button onClick={() => { localStorage.removeItem('pf_profile'); localStorage.removeItem('pf_target_role'); localStorage.removeItem('pf_roadmap'); localStorage.removeItem('pf_interview_score'); setParsedResult(null) }} className="btn-ghost" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>Start Over</button>
           </motion.div>
         )}
@@ -586,6 +604,32 @@ const Resume = () => {
                   {renderError(errors.customRole)}
                 </div>
               )}
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glow-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: '1.125rem', color: 'var(--text-primary)', marginBottom: '1rem' }}>Roadmap Duration</h2>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {[3, 6, 12, 18, 24].map((months) => (
+                  <button
+                    key={months}
+                    onClick={() => { setRoadmapDuration(months); localStorage.setItem('pf_duration', months.toString()) }}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      fontFamily: 'IBM Plex Mono',
+                      background: roadmapDuration === months ? 'var(--accent)' : 'var(--surface)',
+                      color: roadmapDuration === months ? 'white' : 'var(--text-secondary)',
+                      border: roadmapDuration === months ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {months} months
+                  </button>
+                ))}
+              </div>
             </motion.div>
 
             {error && (
