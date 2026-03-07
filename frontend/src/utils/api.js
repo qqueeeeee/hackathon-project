@@ -46,4 +46,8 @@ export const getInterviewSummary = async (data) => {
   return response.data;
 };
 
+export const startGD = (data) => api.post('/gd/start', data).then(r => r.data);
+export const gdTurn = (data) => api.post('/gd/turn', data).then(r => r.data);
+export const concludeGD = (data) => api.post('/gd/conclude', data).then(r => r.data);
+
 export default api;

@@ -13,7 +13,7 @@ logger = logging.getLogger("pathforge")
 
 load_dotenv()
 
-from routers import resume, roadmap, interview
+from routers import resume, roadmap, interview, gd
 
 app = FastAPI()
 
@@ -36,6 +36,7 @@ async def log_requests(request: Request, call_next):
 app.include_router(resume.router, prefix="/resume", tags=["resume"])
 app.include_router(roadmap.router, prefix="/roadmap", tags=["roadmap"])
 app.include_router(interview.router, prefix="/interview", tags=["interview"])
+app.include_router(gd.router, prefix="/gd", tags=["gd"])
 
 @app.get("/")
 def root():

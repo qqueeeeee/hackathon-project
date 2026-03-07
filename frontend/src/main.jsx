@@ -5,6 +5,7 @@ import Landing from './pages/Landing'
 import Resume from './pages/Resume'
 import Roadmap from './pages/Roadmap'
 import Interview from './pages/Interview'
+import GD from './pages/GD'
 import Dashboard from './pages/Dashboard'
 import Navbar from './components/Navbar'
 import { ThemeProvider } from './context/ThemeContext'
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/resume" element={<Resume />} />
           <Route path="/roadmap" element={<Roadmap />} />
           <Route path="/interview" element={<Interview />} />
+          <Route path="/gd" element={<GD />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </BrowserRouter>

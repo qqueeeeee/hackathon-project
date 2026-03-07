@@ -18,7 +18,7 @@ def get_client():
 def chat(system: str, user: str, temperature: float = 0.7) -> str:
     client = get_client()
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="llama-3.3-70b-versatile", #openai/gpt-oss-120b
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user}
