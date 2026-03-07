@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Upload as UploadIcon, FileText, Check, ChevronRight, ChevronLeft, X, Plus, Trash2, Download } from 'lucide-react'
+import { Upload as UploadIcon, FileText, Check, ChevronRight, ChevronLeft, X, Plus, Trash2, Download, RotateCcw } from 'lucide-react'
 import { parseResume, parseResumeFromBuilder } from '../utils/api'
 
 const ROLES = [
@@ -549,7 +549,10 @@ const Resume = () => {
                 {parsedResult.parsing_notes}
               </p>
             )}
-            <button onClick={() => { localStorage.removeItem('pf_profile'); localStorage.removeItem('pf_target_role'); localStorage.removeItem('pf_roadmap'); localStorage.removeItem('pf_interview_score'); setParsedResult(null) }} className="btn-ghost" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>Start Over</button>
+            <button onClick={() => { localStorage.removeItem('pf_profile'); localStorage.removeItem('pf_target_role'); localStorage.removeItem('pf_roadmap'); localStorage.removeItem('pf_interview_score'); setParsedResult(null) }} style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--danger)', borderRadius: '0.5rem', color: 'var(--danger)', fontFamily: 'Inter', fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+              <RotateCcw style={{ width: 14, height: 14 }} />
+              Start Over
+            </button>
           </motion.div>
         )}
 
